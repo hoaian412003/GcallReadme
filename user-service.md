@@ -1,11 +1,11 @@
 
-# GCALLS COMMUNITY - CUSTOMER SERVICE
+# GCALLS COMMUNITY - USER SERVICE
 
   
 
 ***
 
-Customer Service is a service that manipulate database and can be accessed by Gateway via REST API. It only communicates with the access-service. A username and a password, exemplifying Basic Access Authentication, must be validated. This service stores customer information such as phone number, customer information, activities on the system.
+User Service is one of a service that manipulate database and can be accessed by Gateway via REST API. It only communicates with the access-service. A username and a password, exemplifying Basic Access Authentication, must be validated. This service stores user data, role data, sip account
 
 ### Technologies and techniques
 
@@ -91,11 +91,13 @@ This repository utilizes GitLab CI/CD
 
   
 
-* Create, store, and manipulate `Activity`: calllog, send sms,...
+* Create, store, and manipulate
 
-* Create, store, and manipulate `ContactGroup`: Contact information in a group
+*  `Agent`: this is where the user's information is stored in a callcenter
 
-* Create, store, and manipulate `Contact`: Information of contact
+*  `Role`: By default, there are two roles: admin and agent. In addition, you can customize the role yourself
+
+*  `SipAccount`: Save information about sip account from provider
 
 * Authorize via a username and a password, exemplifying Basic Access Authentication
 
@@ -131,14 +133,7 @@ This repository utilizes GitLab CI/CD
 
 * Morgan - HTTP request logger middleware for node.js: <https://github.com/expressjs/morgan>
 
-* Bluebird - A full featured promise library with unmatched performance: <http://bluebirdjs.com/docs/getting-started.html>
-
-``` diff 
-- Need update: **compression**
-- Need update: **axios package**
-- Need remove **body-parser** because this package is deparecated.
-```
-
+  
 
 ##### Development
 
@@ -176,13 +171,15 @@ git clone https://gitlab.com/gcalls-opensource/gcalls-community-version.git
 
 ```
 
-* Change dir into customer-service folder
+  
+
+* Change dir into user-service folder
 
   
 
 ~~~
 
-cd customer-service
+cd user-service
 
 ~~~
 
@@ -225,12 +222,12 @@ npm run test
 ~~~
 
   
-  
 
 ### Source tree
 
 ```diff
-- Need add two file  pbx.js, logger.js in folder config
+- Need add file logger.js and file pbx.js in folder config
+- Need add file package-log.json and file npm-debug.log in folder /
 ```
 
 ***
@@ -242,85 +239,48 @@ npm run test
 ├───config/
 
 │ ├───auth.js
+│ ├───logger.js	(Updated)
+│ ├───pbx.js	(Updated)
 
 │ └───mongodb.js
-│ └───pbx.js - Updated
-│ └───logger.js - Updated
+
 ├───lib/
 
 │ └───middleware.js
 
 ├───model/
 
-│ ├───activity.js
+│ ├───agent.js
 
-│ ├───activity_tag.js
+│ ├───role.js
 
-│ ├───agentgroup.js
-
-│ ├───call_log.js
-
-│ ├───contact-and-group.js
-
-│ ├───contact-group.js
-
-│ ├───contact.js
-
-│ ├───contact_field.js
-
-│ └───template.js
+│ └───sip_account.js
 
 ├───route/
 
-│ ├───activity.js
+│ ├───agent.js
 
-│ ├───agentgroup.js
+│ ├───role.js
 
-│ ├───call_log.js
-
-│ ├───contact-group.js
-
-│ ├───contact.js
-
-│ ├───contact_field.js
-
-│ └───template.js
+│ └───sip_account.js
 
 ├───test/
 
 │ ├───model/
 
-│ │ ├───activity.test.js
+│ │ ├───agent.test.js
 
-│ │ ├───activity_tag.test.js
+│ │ ├───role.test.js
 
-│ │ ├───agentgroup.test.js
-
-│ │ ├───call_log.test.js
-
-│ │ ├───contact-and-group.test.js
-
-│ │ ├───contact-group.test.js
-
-│ │ ├───contact.test.js
-
-│ │ ├───contact_field.test.js
-
-│ │ └───template.test.js
+│ │ └───sip_account.test.js
 
 │ └───route/
 
-│ ├───activity.test.js
+│ ├───agent.test.js
 
-│ ├───call_log.test.js
+│ ├───role.test.js
 
-│ ├───contact-group.test.js
-
-│ ├───contact.test.js
-
-│ ├───contact_field.test.js
-
-│ └───template.test.js
+│ └───sip_account.test.js
 
 ├───.babelrc
 
@@ -342,7 +302,12 @@ npm run test
 
 ├───index.js
 
-├───package.json
+├───package-lock.json	(Updated)
+
+├───npm-debug.log	(Updated)
+
+└───package.json
+
 
   
 
@@ -352,23 +317,21 @@ npm run test
 
 ### Database schema
 
-  ``` diff
-  - Need remove black list and note, Need add ContactGroup, template
- ```
+  
 
 ***
 
   
 
-![Database schema](https://i.imgur.com/2uVE0YS.png)
+![Database schema](https://i.imgur.com/9kGpFqV.png)
 
   
 
-##### Activity	
+##### Agent
 
   
 
-`Activity` of an agent goes along with a contact. Indeed, every call center has a distinct collection to store their call logs. The collection names follow the format `activity_idCallcenter`
+`Agent` is a person who works for a call center. Indeed, every call center has a distinct collection to store their agents. The table name follows the format `agent_idCallcenter`
 
   
 
@@ -378,35 +341,9 @@ npm run test
 
 | _id | string | Unique identity string |
 
-| creator | string | `_id` of the agent creating the activity |
+| role | string | Role assigned to the agent, two accepted values are `admin` and `agent` |
 
-| idContact | string | `_id` of the contact involved |
-
-| text | string | Description of the activity |
-
-| type | string | Three accepted values of activity category are `note`, `calllog`, and `reminder` |
-
-| body | object | If type is `calllog`, `body` includes `idCalllog`, `status`, `duration`, `direction`, `source`, `destination`, `start`, and `end`. If type is `reminder`, `body` includes `remindedAgent`, `duedate`, and `status` |
-
-| body.status | string | If type is `calllog`, five accepted values are `success`, `missed`, `rejected`, `busy`, and `connected`. If type is `reminder`, two accepted values are `checked` and `unchecked` |
-
-| body.idCalllog | string | `_id` of the call |
-
-| body.duration | number | Length of call, measured in seconds |
-
-| body.direction | string | Direction of the call, two accepted values are `incoming` and `outgoing` |
-
-| body.source | string | Caller of the call |
-
-| body.destination | string | Recipient of the call |
-
-| body.start | number | Timestamp of the call initiation, in number of milliseconds since Unix epoch |
-
-| body.end | number | Timestamp of the call end, in number of milliseconds since Unix epoch |
-
-| body.remindedAgent | string | `_id` of agent reminded |
-
-| body.duedate | number | Timestamp of the deadline on schedule, in number of milliseconds since Unix epoch |
+| idSip | string | `_id` of SIP account assigned to the agent |
 
 | createdAt | int64 | Timestamp of the document creation, in number of milliseconds since Unix epoch |
 
@@ -416,11 +353,11 @@ npm run test
 
   
 
-##### ContactGroup
+##### Role
 
   
 
-`ContactGroup` provides information about a group of contacts chosen by an agent individually in their view. Indeed, every call center has a distinct collection to store their groups. The collection names follow the format `contactGroup_idCallcenter`
+`Role` is assigned to each agent to determine their authorization. Indeed, every call center has a distinct table to store their roles. The table name follows the format `role_idCallcenter`
 
   
 
@@ -430,13 +367,7 @@ npm run test
 
 | _id | string | Unique identity string |
 
-| name | string | Name of the group |
-
-| description | string | Description of the group |
-
-| creator | string | `_id` of the agent creating the group |
-
-| contactList | array | Each item is the `_id` of agent in the group |
+| name | string | Name of the role, two accepted values are `admin` and `agent` |
 
 | createdAt | int64 | Timestamp of the document creation, in number of milliseconds since Unix epoch |
 
@@ -446,11 +377,11 @@ npm run test
 
   
 
-##### Contact
+##### SipAccount
 
   
 
-`Contact` provides information of a contact. Indeed, every call center has a distinct collection to store their contacts. The collection names follow the format `contact_idCallcenter`
+A `SipAccount` provides authentication credentials to log in a SIP account. Indeed, every call center has a distinct table to store their SIP accounts. The table name follows the format `sipAccount_idCallcenter`
 
   
 
@@ -458,19 +389,15 @@ npm run test
 
 |:-----|:------|:-----------|
 
-| _id | string | Unique identity string |
+| _id | string | Unique identity string, in this case, the hotline number |
 
-| firstName | string | First name of the contact |
+| domain | string | Domain of the SIP account |
 
-| lastName | string | Last name of the contact |
+| extension | string | Number of extension in SIP URI |
 
-| gender | string | Gender of the contact |
+| password | string | Password to get access to call connection |
 
-| email | string | Email of the contact |
-
-| phone | string | Phone number of the contact |
-
-| avatar | string | Avatar of the contact |
+| proxy| string | Proxy the of SIP account |
 
 | createdAt | int64 | Timestamp of the document creation, in number of milliseconds since Unix epoch |
 
